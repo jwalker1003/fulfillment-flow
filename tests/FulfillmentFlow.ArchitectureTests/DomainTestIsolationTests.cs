@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Xml.Linq;
 
 namespace FulfillmentFlow.ArchitectureTests;
@@ -5,7 +6,8 @@ namespace FulfillmentFlow.ArchitectureTests;
 /// <summary>
 /// NFR-6: domain test projects need no infrastructure. Neither the test project nor anything it
 /// references (followed through project references) may pull in EF Core, SQLite, ASP.NET Core or a
-/// mocking library. Checked from the project files so the rule does not depend on build order.
+/// mocking library. Checked from the project files and from NuGet's restore output
+/// (<c>obj/project.assets.json</c>), so the rule does not depend on build order.
 /// </summary>
 public sealed class DomainTestIsolationTests
 {
@@ -57,6 +59,37 @@ public sealed class DomainTestIsolationTests
             .ToList();
 
         violations.ShouldBeEmpty();
+    }
+
+    [Theory]
+    [MemberData(nameof(DomainTestProjects))]
+    [Trait("Req", "NFR-6")]
+    public void NFR_6_domain_test_projects_restore_no_ef_core_sqlite_asp_net_core_or_mocking_package(string testProject)
+    {
+        var assetsFile = Path.Combine(Path.GetDirectoryName(RepositoryLayout.PathOf(testProject))!, "obj", "project.assets.json");
+
+        var restored = RestoredLibrariesOf(assetsFile);
+
+        restored.ShouldNotBeEmpty($"{assetsFile} has no libraries; restore the solution first.");
+        restored.Where(library => SolutionAssemblies.MatchesAny(library, ForbiddenPackages)).ShouldBeEmpty();
+    }
+
+    /// <summary>
+    /// Every library NuGet restored for the project (the keys of <c>libraries</c> in
+    /// <c>project.assets.json</c>, minus the version). This catches packages added through
+    /// Directory.Build.props/.targets and packages pulled in transitively by other packages.
+    /// </summary>
+    private static IReadOnlyList<string> RestoredLibrariesOf(string assetsFile)
+    {
+        File.Exists(assetsFile).ShouldBeTrue($"{assetsFile} is missing; restore the solution first.");
+
+        using var document = JsonDocument.Parse(File.ReadAllText(assetsFile));
+
+        return
+        [
+            .. document.RootElement.GetProperty("libraries").EnumerateObject()
+                .Select(library => library.Name.Split('/')[0]),
+        ];
     }
 
     /// <summary>The project file and every project file reachable from it through project references.</summary>

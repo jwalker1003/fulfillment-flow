@@ -63,7 +63,12 @@ public sealed class BillingProviderIsolationTests
         {
             return SolutionAssemblies.Load(assemblyName).GetTypes();
         }
-        catch (Exception ex) when (ex is FileNotFoundException or System.Reflection.ReflectionTypeLoadException or BadImageFormatException)
+        catch (System.Reflection.ReflectionTypeLoadException ex)
+        {
+            // Keep every type that did load so a partial load cannot hide a FakePay namespace.
+            return ex.Types.OfType<Type>();
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or BadImageFormatException)
         {
             return [];
         }

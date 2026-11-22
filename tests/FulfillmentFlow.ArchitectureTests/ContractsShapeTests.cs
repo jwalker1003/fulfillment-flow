@@ -1,18 +1,18 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using FulfillmentFlow.BuildingBlocks.Contracts;
 
 namespace FulfillmentFlow.ArchitectureTests;
 
 /// <summary>
 /// Contracts shape (ADR-0005): what a context publishes is immutable data. Every public type in a
-/// <c>*.Contracts</c> assembly is a sealed record, and every <c>*IntegrationEvent</c> implements
+/// <c>*.Contracts</c> assembly is a sealed record, and every <c>*IntegrationEvent</c> (or versioned
+/// <c>*IntegrationEventV2</c>, docs/04-contracts/integration-events.md rule 4) implements
 /// <see cref="IIntegrationEvent"/>.
 /// </summary>
-public sealed class ContractsShapeTests
+public sealed partial class ContractsShapeTests
 {
-    private const string IntegrationEventSuffix = "IntegrationEvent";
-
     public static TheoryData<string> ContractsAssemblies => new(SolutionAssemblies.ContractsAssemblies);
 
     [Theory]
@@ -49,6 +49,8 @@ public sealed class ContractsShapeTests
         var plainClass = typeof(SampleClass);
         var recordStruct = typeof(SampleRecordStruct);
         var eventWithoutInterface = typeof(SampleWithoutInterfaceIntegrationEvent);
+        var versionedEventWithoutInterface = typeof(SampleWithoutInterfaceIntegrationEventV2);
+        var derivedRecord = typeof(SampleDerivedRecord);
 
         IsSealedRecord(good).ShouldBeTrue();
         IsMisdeclaredIntegrationEvent(good).ShouldBeFalse();
@@ -56,6 +58,8 @@ public sealed class ContractsShapeTests
         IsSealedRecord(plainClass).ShouldBeFalse();
         IsSealedRecord(recordStruct).ShouldBeFalse();
         IsMisdeclaredIntegrationEvent(eventWithoutInterface).ShouldBeTrue();
+        IsMisdeclaredIntegrationEvent(versionedEventWithoutInterface).ShouldBeTrue();
+        IsSealedRecord(derivedRecord).ShouldBeTrue();
     }
 
     /// <summary>A sealed record class: the compiler emits a <c>&lt;Clone&gt;$</c> method only for record classes.</summary>
@@ -65,8 +69,11 @@ public sealed class ContractsShapeTests
         && type.GetMethod("<Clone>$", BindingFlags.Public | BindingFlags.Instance) is not null;
 
     internal static bool IsMisdeclaredIntegrationEvent(Type type) =>
-        type.Name.EndsWith(IntegrationEventSuffix, StringComparison.Ordinal)
+        IntegrationEventName().IsMatch(type.Name)
         && !typeof(IIntegrationEvent).IsAssignableFrom(type);
+
+    [GeneratedRegex(@"IntegrationEvent(V\d+)?$", RegexOptions.CultureInvariant)]
+    private static partial Regex IntegrationEventName();
 
     private static bool IsCompilerGenerated(Type type) =>
         type.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false) || type.Name.StartsWith('<');
@@ -82,4 +89,6 @@ public sealed class ContractsShapeTests
     private readonly record struct SampleRecordStruct(int Value);
 
     private sealed record SampleWithoutInterfaceIntegrationEvent(Guid MessageId);
+
+    private sealed record SampleWithoutInterfaceIntegrationEventV2(Guid MessageId);
 }

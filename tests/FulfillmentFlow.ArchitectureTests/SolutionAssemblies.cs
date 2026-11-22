@@ -60,6 +60,9 @@ internal static class SolutionAssemblies
 
     public static Assembly Load(string name) => Assembly.Load(new AssemblyName(name));
 
+    // GetReferencedAssemblies records only references the compiled code actually uses; references that
+    // exist only in a .csproj are caught by ProjectStructureTests.
+
     /// <summary>Names of the solution assemblies the compiled assembly actually references.</summary>
     public static IReadOnlyList<string> SolutionReferencesOf(string name) =>
         [.. Load(name).GetReferencedAssemblies()
