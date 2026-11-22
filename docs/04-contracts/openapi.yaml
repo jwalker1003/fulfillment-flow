@@ -1,0 +1,923 @@
+openapi: 3.1.0
+info:
+  title: Fulfillment Flow API
+  version: 1.1.0
+  description: |
+    REST API for the Fulfillment Flow modular monolith. Thin layer over application services.
+    - All command endpoints (POST/PUT/DELETE) accept an optional `Idempotency-Key` header (API-6).
+    - Rule violations return RFC 9457 problem details with `code` and `requirement` (API-3); see docs/04-contracts/error-catalog.md.
+    - JSON is camelCase. Money is a decimal number in USD. Quantities are integers.
+    The implemented API must match this document; the built-in OpenAPI output is compared to it in story P7-01.
+
+tags:
+  - name: Orders
+  - name: Inventory
+  - name: Fulfillment
+  - name: Catalog
+  - name: Views
+  - name: Admin
+
+paths:
+  /orders:
+    post:
+      tags: [Orders]
+      operationId: createOrder
+      summary: Create a Draft order (API-1, ORD-1.1)
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateOrderRequest' }
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location: { schema: { type: string }, description: /orders/{id} }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreatedResponse' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /orders/{orderId}:
+    get:
+      tags: [Orders]
+      operationId: getOrder
+      summary: Get an order (application query over the Ordering module)
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /orders/{orderId}/lines:
+    post:
+      tags: [Orders]
+      operationId: addOrderLine
+      summary: Add a line; merges with an existing line for the same SKU (ORD-1.2–1.5)
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddOrderLineRequest' }
+      responses:
+        '200':
+          description: Updated order
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /orders/{orderId}/lines/{sku}:
+    put:
+      tags: [Orders]
+      operationId: changeOrderLineQuantity
+      summary: Change a line's quantity (ORD-1.6)
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+        - $ref: '#/components/parameters/Sku'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quantity]
+              properties:
+                quantity: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Updated order
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+    delete:
+      tags: [Orders]
+      operationId: removeOrderLine
+      summary: Remove a line (ORD-1.6)
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+        - $ref: '#/components/parameters/Sku'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Updated order
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /orders/{orderId}/shipping-address:
+    put:
+      tags: [Orders]
+      operationId: setShippingAddress
+      summary: Set the shipping address (ORD-1.7)
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShippingAddress' }
+      responses:
+        '200':
+          description: Updated order
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /orders/{orderId}/place:
+    post:
+      tags: [Orders]
+      operationId: placeOrder
+      summary: Place the order (ORD-2, ORD-5); starts the saga
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Placed order
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /orders/{orderId}/cancel:
+    post:
+      tags: [Orders]
+      operationId: cancelOrder
+      summary: Customer cancellation (ORD-4, SAGA-4)
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 200 }
+      responses:
+        '200':
+          description: Cancelled order
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /inventory/locations:
+    post:
+      tags: [Inventory]
+      operationId: registerLocation
+      summary: Register a warehouse location
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LocationDto' }
+      responses:
+        '201': { description: Created }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+    get:
+      tags: [Inventory]
+      operationId: listLocations
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/LocationDto' } }
+
+  /inventory/receipts:
+    post:
+      tags: [Inventory]
+      operationId: receiveStock
+      summary: Receive stock (API-4, INV-1)
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sku, locationId, quantity]
+              properties:
+                sku: { type: string }
+                locationId: { type: string }
+                quantity: { type: integer }
+      responses:
+        '200':
+          description: Stock item after receipt
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StockItemDto' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /inventory/adjustments:
+    post:
+      tags: [Inventory]
+      operationId: adjustStock
+      summary: Adjust on-hand with a reason (API-5, INV-5)
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sku, locationId, quantityChange]
+              properties:
+                sku: { type: string }
+                locationId: { type: string }
+                quantityChange: { type: integer, description: Signed, non-zero }
+                reason: { type: [string, 'null'], description: Required by INV-5.1; missing → 422 }
+      responses:
+        '200':
+          description: Stock item after adjustment
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StockItemDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /inventory/stock-items/{sku}/{locationId}/reorder-threshold:
+    put:
+      tags: [Inventory]
+      operationId: setReorderThreshold
+      summary: Set or clear the reorder threshold (INV-7.3)
+      parameters:
+        - $ref: '#/components/parameters/Sku'
+        - $ref: '#/components/parameters/LocationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                threshold: { type: [integer, 'null'], minimum: 0 }
+      responses:
+        '200':
+          description: Stock item
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StockItemDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /inventory/stock-counts:
+    post:
+      tags: [Inventory]
+      operationId: startStockCount
+      summary: Start a cycle count at a location (INV-8)
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [locationId]
+              properties:
+                locationId: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreatedResponse' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /inventory/stock-counts/{stockCountId}:
+    get:
+      tags: [Inventory]
+      operationId: getStockCount
+      parameters: [{ $ref: '#/components/parameters/StockCountId' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StockCountDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /inventory/stock-counts/{stockCountId}/lines:
+    post:
+      tags: [Inventory]
+      operationId: recordCount
+      summary: Record a counted quantity for a SKU (INV-8.1)
+      parameters:
+        - $ref: '#/components/parameters/StockCountId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sku, counted]
+              properties:
+                sku: { type: string }
+                counted: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Count
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StockCountDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /inventory/stock-counts/{stockCountId}/close:
+    post:
+      tags: [Inventory]
+      operationId: closeStockCount
+      summary: Close (approve) the count (INV-8.2, INV-8.3)
+      parameters:
+        - $ref: '#/components/parameters/StockCountId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Closed count
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StockCountDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /fulfillment/pick-lists/{pickListId}:
+    get:
+      tags: [Fulfillment]
+      operationId: getPickList
+      parameters: [{ $ref: '#/components/parameters/PickListId' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PickListDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /fulfillment/pick-lists:
+    get:
+      tags: [Fulfillment]
+      operationId: listPickLists
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [Open, Completed, Dispatched, Cancelled] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PickListDto' } }
+
+  /fulfillment/pick-lists/{pickListId}/picks/{pickId}/complete:
+    post:
+      tags: [Fulfillment]
+      operationId: completePick
+      summary: Mark one pick complete (FUL-2.3)
+      parameters:
+        - $ref: '#/components/parameters/PickListId'
+        - name: pickId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Pick list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PickListDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /fulfillment/pick-lists/{pickListId}/complete:
+    post:
+      tags: [Fulfillment]
+      operationId: completePickList
+      summary: Complete the pick list (FUL-2.1, FUL-2.2)
+      parameters:
+        - $ref: '#/components/parameters/PickListId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Pick list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PickListDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /fulfillment/pick-lists/{pickListId}/dispatch:
+    post:
+      tags: [Fulfillment]
+      operationId: dispatchShipment
+      summary: Dispatch the shipment (FUL-3)
+      parameters:
+        - $ref: '#/components/parameters/PickListId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [carrier, trackingNumber]
+              properties:
+                carrier: { type: string }
+                trackingNumber: { type: string }
+      responses:
+        '200':
+          description: Pick list with shipment
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PickListDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /catalog/products:
+    get:
+      tags: [Catalog]
+      operationId: listProducts
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ProductDto' } }
+    post:
+      tags: [Catalog]
+      operationId: createProduct
+      summary: Create a product (CAT-1)
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductDto' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /catalog/products/{sku}:
+    get:
+      tags: [Catalog]
+      operationId: getProduct
+      parameters: [{ $ref: '#/components/parameters/Sku' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+    put:
+      tags: [Catalog]
+      operationId: updateProduct
+      summary: Update a product; publishes ProductChanged (CAT-2)
+      parameters:
+        - $ref: '#/components/parameters/Sku'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductUpdate' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductDto' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /views/stock-levels:
+    get:
+      tags: [Views]
+      operationId: getStockLevels
+      parameters:
+        - { name: sku, in: query, schema: { type: string } }
+        - { name: locationId, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/StockLevelView' } }
+
+  /views/low-stock:
+    get:
+      tags: [Views]
+      operationId: getLowStock
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/LowStockView' } }
+
+  /views/orders:
+    get:
+      tags: [Views]
+      operationId: getOrderBoard
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/OrderStatus' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/OrderBoardView' } }
+
+  /views/orders/{orderId}/process:
+    get:
+      tags: [Views]
+      operationId: getOrderProcess
+      summary: Saga step and history for an order (SAGA-7)
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderProcessView' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /views/shipments:
+    get:
+      tags: [Views]
+      operationId: getShipments
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ShipmentView' } }
+
+  /views/activity:
+    get:
+      tags: [Views]
+      operationId: getActivity
+      parameters:
+        - { name: take, in: query, schema: { type: integer, default: 50, maximum: 200 } }
+      responses:
+        '200':
+          description: Newest first
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ActivityView' } }
+
+  /admin/read-models/rebuild:
+    post:
+      tags: [Admin]
+      operationId: rebuildReadModels
+      summary: Truncate and replay all read models from the outbox log (DASH-3)
+      responses:
+        '202':
+          description: Rebuild finished
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventsReplayed: { type: integer }
+
+  /admin/dead-letters:
+    get:
+      tags: [Admin]
+      operationId: listDeadLetters
+      summary: Messages that failed after max attempts (NFR-11)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/DeadLetterView' } }
+
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, maxLength: 100 }
+      description: Same key + same body replays the first response; same key + different body → 422 api.idempotency-key-reused.
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Sku:
+      name: sku
+      in: path
+      required: true
+      schema: { type: string }
+    LocationId:
+      name: locationId
+      in: path
+      required: true
+      schema: { type: string }
+    StockCountId:
+      name: stockCountId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    PickListId:
+      name: pickListId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Problem:
+      description: Problem details (RFC 9457)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+  schemas:
+    ProblemDetails:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string, examples: ['urn:fulfillment-flow:error:inventory.insufficient-stock'] }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        code: { type: string }
+        requirement: { type: [string, 'null'], examples: ['INV-2.2'] }
+        traceId: { type: string }
+        errors:
+          type: object
+          additionalProperties: { type: array, items: { type: string } }
+
+    CreatedResponse:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string }
+
+    CreateOrderRequest:
+      type: object
+      required: [customerReference]
+      properties:
+        customerReference: { type: string, minLength: 1, maxLength: 64 }
+
+    AddOrderLineRequest:
+      type: object
+      required: [sku, quantity]
+      properties:
+        sku: { type: string }
+        quantity: { type: integer }
+
+    ShippingAddress:
+      type: object
+      required: [line1, city, postalCode, countryCode, latitude, longitude]
+      properties:
+        line1: { type: string }
+        city: { type: string }
+        postalCode: { type: string }
+        countryCode: { type: string, minLength: 2, maxLength: 2 }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+
+    OrderStatus:
+      type: string
+      enum: [Draft, Placed, Paid, Shipped, Cancelled]
+
+    OrderDto:
+      type: object
+      required: [id, customerReference, status, lines, total, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        customerReference: { type: string }
+        status: { $ref: '#/components/schemas/OrderStatus' }
+        shippingAddress: { oneOf: [{ $ref: '#/components/schemas/ShippingAddress' }, { type: 'null' }] }
+        lines:
+          type: array
+          items:
+            type: object
+            required: [id, sku, quantity, unitPrice, lineTotal]
+            properties:
+              id: { type: string, format: uuid }
+              sku: { type: string }
+              quantity: { type: integer }
+              unitPrice: { type: number }
+              lineTotal: { type: number }
+        total: { type: number }
+        createdAt: { type: string, format: date-time }
+        placedAt: { type: [string, 'null'], format: date-time }
+        cancellationReason: { type: [string, 'null'] }
+
+    LocationDto:
+      type: object
+      required: [id, name, latitude, longitude]
+      properties:
+        id: { type: string, examples: ['SEA-1'] }
+        name: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+
+    StockItemDto:
+      type: object
+      required: [sku, locationId, onHand, reserved, available]
+      properties:
+        sku: { type: string }
+        locationId: { type: string }
+        onHand: { type: integer }
+        reserved: { type: integer }
+        available: { type: integer }
+        reorderThreshold: { type: [integer, 'null'] }
+
+    StockCountDto:
+      type: object
+      required: [id, locationId, status, lines]
+      properties:
+        id: { type: string, format: uuid }
+        locationId: { type: string }
+        status: { type: string, enum: [Open, Closed] }
+        lines:
+          type: array
+          items:
+            type: object
+            properties:
+              sku: { type: string }
+              expected: { type: integer }
+              counted: { type: integer }
+              variance: { type: integer }
+
+    PickListDto:
+      type: object
+      required: [id, orderId, status, picks]
+      properties:
+        id: { type: string, format: uuid }
+        orderId: { type: string, format: uuid }
+        status: { type: string, enum: [Open, Completed, Dispatched, Cancelled] }
+        picks:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              sku: { type: string }
+              locationId: { type: string }
+              quantity: { type: integer }
+              isCompleted: { type: boolean }
+        shipment:
+          oneOf:
+            - type: 'null'
+            - type: object
+              properties:
+                id: { type: string, format: uuid }
+                carrier: { type: string }
+                trackingNumber: { type: string }
+                dispatchedAt: { type: string, format: date-time }
+
+    ProductInput:
+      type: object
+      required: [sku, name, unitPrice, weightKg, lengthCm, widthCm, heightCm]
+      properties:
+        sku: { type: string }
+        name: { type: string }
+        unitPrice: { type: number, exclusiveMinimum: 0 }
+        weightKg: { type: number, exclusiveMinimum: 0 }
+        lengthCm: { type: number, exclusiveMinimum: 0 }
+        widthCm: { type: number, exclusiveMinimum: 0 }
+        heightCm: { type: number, exclusiveMinimum: 0 }
+
+    ProductUpdate:
+      type: object
+      required: [name, unitPrice, weightKg, lengthCm, widthCm, heightCm, isActive]
+      properties:
+        name: { type: string }
+        unitPrice: { type: number }
+        weightKg: { type: number }
+        lengthCm: { type: number }
+        widthCm: { type: number }
+        heightCm: { type: number }
+        isActive: { type: boolean }
+
+    ProductDto:
+      allOf:
+        - $ref: '#/components/schemas/ProductInput'
+        - type: object
+          properties:
+            isActive: { type: boolean }
+            version: { type: integer }
+
+    StockLevelView:
+      type: object
+      properties:
+        sku: { type: string }
+        locationId: { type: string }
+        onHand: { type: integer }
+        reserved: { type: integer }
+        available: { type: integer }
+        reorderThreshold: { type: [integer, 'null'] }
+        updatedAt: { type: string, format: date-time }
+
+    LowStockView:
+      type: object
+      properties:
+        sku: { type: string }
+        locationId: { type: string }
+        available: { type: integer }
+        reorderThreshold: { type: integer }
+        detectedAt: { type: string, format: date-time }
+
+    OrderBoardView:
+      type: object
+      properties:
+        orderId: { type: string, format: uuid }
+        customerReference: { type: string }
+        status: { $ref: '#/components/schemas/OrderStatus' }
+        total: { type: [number, 'null'] }
+        createdAt: { type: string, format: date-time }
+        statusChangedAt: { type: string, format: date-time }
+        processStep: { type: [string, 'null'] }
+        endReason: { type: [string, 'null'] }
+
+    OrderProcessView:
+      type: object
+      properties:
+        orderId: { type: string, format: uuid }
+        step: { type: string, enum: [AwaitingStock, AwaitingPayment, Fulfilling, Cancelling, Completed, Cancelled] }
+        endReason: { type: [string, 'null'] }
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              at: { type: string, format: date-time }
+              step: { type: string }
+              previousStep: { type: [string, 'null'] }
+
+    ShipmentView:
+      type: object
+      properties:
+        orderId: { type: string, format: uuid }
+        shipmentId: { type: string, format: uuid }
+        carrier: { type: string }
+        trackingNumber: { type: string }
+        dispatchedAt: { type: string, format: date-time }
+
+    ActivityView:
+      type: object
+      properties:
+        messageId: { type: string, format: uuid }
+        occurredAt: { type: string, format: date-time }
+        context: { type: string, enum: [Inventory, Ordering, Fulfillment, Catalog, Billing] }
+        eventType: { type: string }
+        summary: { type: string }
+        orderId: { type: [string, 'null'], format: uuid }
+
+    DeadLetterView:
+      type: object
+      properties:
+        module: { type: string }
+        messageId: { type: string, format: uuid }
+        type: { type: string }
+        attempts: { type: integer }
+        lastError: { type: string }
+        deadLetteredAt: { type: string, format: date-time }
