@@ -33,6 +33,18 @@ internal static class RepositoryLayout
         "tests/FulfillmentFlow.Application.Tests/FulfillmentFlow.Application.Tests.csproj",
         "tests/FulfillmentFlow.IntegrationTests/FulfillmentFlow.IntegrationTests.csproj",
         "tests/FulfillmentFlow.ArchitectureTests/FulfillmentFlow.ArchitectureTests.csproj",
+
+        // Listed in docs/06-quality/test-strategy.md (Domain layer); added by P1-02.
+        "tests/FulfillmentFlow.SharedKernel.Tests/FulfillmentFlow.SharedKernel.Tests.csproj",
+    ];
+
+    /// <summary>The Domain layer test projects from docs/06-quality/test-strategy.md (NFR-6).</summary>
+    public static readonly string[] DomainTestProjects =
+    [
+        .. new[] { "Inventory", "Ordering", "Fulfillment" }
+            .Select(context => $"tests/FulfillmentFlow.{context}.Domain.Tests/FulfillmentFlow.{context}.Domain.Tests.csproj"),
+        "tests/FulfillmentFlow.Billing.Tests/FulfillmentFlow.Billing.Tests.csproj",
+        "tests/FulfillmentFlow.SharedKernel.Tests/FulfillmentFlow.SharedKernel.Tests.csproj",
     ];
 
     private static readonly Lazy<string> LazyRoot = new(FindRoot);
