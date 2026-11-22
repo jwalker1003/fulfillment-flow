@@ -13,4 +13,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Inventory\FulfillmentFlow.Inventory.Application\FulfillmentFlow.Inventory.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Ordering\FulfillmentFlow.Ordering.Application\FulfillmentFlow.Ordering.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Fulfillment\FulfillmentFlow.Fulfillment.Application\FulfillmentFlow.Fulfillment.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Billing\FulfillmentFlow.Billing.Application\FulfillmentFlow.Billing.Application.csproj" />
+  </ItemGroup>
+
 </Project>

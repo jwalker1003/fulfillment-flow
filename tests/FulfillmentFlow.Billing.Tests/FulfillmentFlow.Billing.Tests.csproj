@@ -13,4 +13,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Billing\FulfillmentFlow.Billing.Domain\FulfillmentFlow.Billing.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

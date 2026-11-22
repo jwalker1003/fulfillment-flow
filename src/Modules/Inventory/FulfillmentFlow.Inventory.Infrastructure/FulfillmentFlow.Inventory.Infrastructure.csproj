@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\FulfillmentFlow.Inventory.Application\FulfillmentFlow.Inventory.Application.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\FulfillmentFlow.BuildingBlocks.Infrastructure\FulfillmentFlow.BuildingBlocks.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

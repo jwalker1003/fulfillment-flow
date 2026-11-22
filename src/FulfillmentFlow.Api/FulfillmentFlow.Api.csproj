@@ -1,3 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
-
+  <ItemGroup>
+    <ProjectReference Include="..\Modules\Inventory\FulfillmentFlow.Inventory.Infrastructure\FulfillmentFlow.Inventory.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Ordering\FulfillmentFlow.Ordering.Infrastructure\FulfillmentFlow.Ordering.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Fulfillment\FulfillmentFlow.Fulfillment.Infrastructure\FulfillmentFlow.Fulfillment.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Billing\FulfillmentFlow.Billing.Infrastructure\FulfillmentFlow.Billing.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Catalog\FulfillmentFlow.Catalog\FulfillmentFlow.Catalog.csproj" />
+    <ProjectReference Include="..\Modules\Reporting\FulfillmentFlow.Reporting\FulfillmentFlow.Reporting.csproj" />
+    <ProjectReference Include="..\FulfillmentFlow.Dashboard\FulfillmentFlow.Dashboard.csproj" />
+  </ItemGroup>
 </Project>

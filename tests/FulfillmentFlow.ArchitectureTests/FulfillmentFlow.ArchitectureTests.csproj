@@ -14,4 +14,32 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BuildingBlocks\FulfillmentFlow.BuildingBlocks.Application\FulfillmentFlow.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\FulfillmentFlow.BuildingBlocks.Contracts\FulfillmentFlow.BuildingBlocks.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\FulfillmentFlow.BuildingBlocks.Infrastructure\FulfillmentFlow.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\FulfillmentFlow.SharedKernel\FulfillmentFlow.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\FulfillmentFlow.Api\FulfillmentFlow.Api.csproj" />
+    <ProjectReference Include="..\..\src\FulfillmentFlow.Dashboard\FulfillmentFlow.Dashboard.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Billing\FulfillmentFlow.Billing.Application\FulfillmentFlow.Billing.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Billing\FulfillmentFlow.Billing.Contracts\FulfillmentFlow.Billing.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Billing\FulfillmentFlow.Billing.Domain\FulfillmentFlow.Billing.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Billing\FulfillmentFlow.Billing.Infrastructure\FulfillmentFlow.Billing.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\FulfillmentFlow.Catalog.Contracts\FulfillmentFlow.Catalog.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\FulfillmentFlow.Catalog\FulfillmentFlow.Catalog.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Fulfillment\FulfillmentFlow.Fulfillment.Application\FulfillmentFlow.Fulfillment.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Fulfillment\FulfillmentFlow.Fulfillment.Contracts\FulfillmentFlow.Fulfillment.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Fulfillment\FulfillmentFlow.Fulfillment.Domain\FulfillmentFlow.Fulfillment.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Fulfillment\FulfillmentFlow.Fulfillment.Infrastructure\FulfillmentFlow.Fulfillment.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Inventory\FulfillmentFlow.Inventory.Application\FulfillmentFlow.Inventory.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Inventory\FulfillmentFlow.Inventory.Contracts\FulfillmentFlow.Inventory.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Inventory\FulfillmentFlow.Inventory.Domain\FulfillmentFlow.Inventory.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Inventory\FulfillmentFlow.Inventory.Infrastructure\FulfillmentFlow.Inventory.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Ordering\FulfillmentFlow.Ordering.Application\FulfillmentFlow.Ordering.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Ordering\FulfillmentFlow.Ordering.Contracts\FulfillmentFlow.Ordering.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Ordering\FulfillmentFlow.Ordering.Domain\FulfillmentFlow.Ordering.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Ordering\FulfillmentFlow.Ordering.Infrastructure\FulfillmentFlow.Ordering.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Reporting\FulfillmentFlow.Reporting\FulfillmentFlow.Reporting.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\FulfillmentFlow.SharedKernel\FulfillmentFlow.SharedKernel.csproj" />
+    <ProjectReference Include="..\FulfillmentFlow.BuildingBlocks.Contracts\FulfillmentFlow.BuildingBlocks.Contracts.csproj" />
+  </ItemGroup>
+</Project>
