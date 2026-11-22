@@ -15,8 +15,8 @@ The single record of where the build stands. `/run-phase` and `/implement-story`
 **Gate:** ⏳ not reached
 | Story | Title | Status | Commit | Notes |
 | --- | --- | --- | --- | --- |
-| P1-01 | Solution scaffold | todo | | |
-| P1-02 | Shared kernel primitives | todo | | |
+| P1-01 | Solution scaffold | done | fb1bdef | 1 review round. Open question before P6-03: should Billing.Tests reference Billing.Infrastructure to test the FakePay translator? That conflicts with NFR-6 (no EF Core in domain test projects). Microsoft packages pinned to 9.0.14 to match the installed runtime. ADR-tagged tests are listed in a new "Architecture decisions" table in traceability.md. |
+| P1-02 | Shared kernel primitives | in-progress | | |
 | P1-03 | Architecture tests | todo | | |
 
 ## Phase 2 — Inventory domain
