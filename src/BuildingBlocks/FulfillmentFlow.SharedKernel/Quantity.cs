@@ -1,26 +1,45 @@
+using System.Globalization;
+
 namespace FulfillmentFlow.SharedKernel;
 
+/// <summary>A non-negative whole number of units.</summary>
 public readonly record struct Quantity : IComparable<Quantity>
 {
-    public static Quantity Zero => throw new NotImplementedException();
+    private Quantity(int value) => Value = value;
 
-    public int Value => throw new NotImplementedException();
+    public static Quantity Zero => default;
 
-    public bool IsPositive => throw new NotImplementedException();
+    public int Value { get; }
 
-    public static Result<Quantity> Create(int value) => throw new NotImplementedException();
+    public bool IsPositive => Value > 0;
 
-    public static Quantity operator +(Quantity left, Quantity right) => throw new NotImplementedException();
+    public static Result<Quantity> Create(int value)
+    {
+        if (value < 0)
+        {
+            return new DomainError(SharedErrors.InvalidQuantity, $"Quantity cannot be negative (was {value}).");
+        }
 
-    public static Quantity operator -(Quantity left, Quantity right) => throw new NotImplementedException();
+        return Result.Success(new Quantity(value));
+    }
 
-    public static bool operator <(Quantity left, Quantity right) => throw new NotImplementedException();
+    public static Quantity operator +(Quantity left, Quantity right) => new(checked(left.Value + right.Value));
 
-    public static bool operator >(Quantity left, Quantity right) => throw new NotImplementedException();
+    /// <summary>Subtracts. Callers must check <c>left &gt;= right</c> first; going below zero is a programming error.</summary>
+    public static Quantity operator -(Quantity left, Quantity right) =>
+        left.Value >= right.Value
+            ? new Quantity(left.Value - right.Value)
+            : throw new InvalidOperationException($"Cannot subtract {right.Value} from {left.Value}: quantity would be negative.");
 
-    public static bool operator <=(Quantity left, Quantity right) => throw new NotImplementedException();
+    public static bool operator <(Quantity left, Quantity right) => left.Value < right.Value;
 
-    public static bool operator >=(Quantity left, Quantity right) => throw new NotImplementedException();
+    public static bool operator >(Quantity left, Quantity right) => left.Value > right.Value;
 
-    public int CompareTo(Quantity other) => throw new NotImplementedException();
+    public static bool operator <=(Quantity left, Quantity right) => left.Value <= right.Value;
+
+    public static bool operator >=(Quantity left, Quantity right) => left.Value >= right.Value;
+
+    public int CompareTo(Quantity other) => Value.CompareTo(other.Value);
+
+    public override string ToString() => Value.ToString(CultureInfo.InvariantCulture);
 }

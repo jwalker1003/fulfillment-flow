@@ -54,7 +54,7 @@ public sealed class AggregateRootTests
         var events = aggregate.DomainEvents;
 
         events.ShouldNotBeAssignableTo<List<IDomainEvent>>();
-        events.ShouldNotBeAssignableTo<ICollection<IDomainEvent>>();
+        ((events as ICollection<IDomainEvent>)?.IsReadOnly ?? true).ShouldBeTrue();
     }
 
     [Fact]

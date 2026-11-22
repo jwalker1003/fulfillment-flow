@@ -1,16 +1,38 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+
 namespace FulfillmentFlow.SharedKernel;
 
+/// <summary>A non-negative amount in USD with at most 2 decimal places.</summary>
 public readonly record struct Money
 {
-    public static Money Zero => throw new NotImplementedException();
+    private const string Usd = "USD";
 
-    public decimal Amount => throw new NotImplementedException();
+    private Money(decimal amount) => Amount = amount;
 
-    public string Currency => throw new NotImplementedException();
+    public static Money Zero => default;
 
-    public static Result<Money> Create(decimal amount) => throw new NotImplementedException();
+    public decimal Amount { get; }
 
-    public static Money operator +(Money left, Money right) => throw new NotImplementedException();
+    /// <summary>Always USD in v1.</summary>
+    [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Currency belongs to each Money value; it is constant only while v1 is USD-only.")]
+    public string Currency => Usd;
 
-    public static Money operator *(Money money, Quantity quantity) => throw new NotImplementedException();
+    public static Result<Money> Create(decimal amount)
+    {
+        if (amount < 0m || decimal.Round(amount, 2) != amount)
+        {
+            return new DomainError(
+                SharedErrors.InvalidMoney,
+                $"Money must be a non-negative amount with at most 2 decimal places (was {amount.ToString(CultureInfo.InvariantCulture)}).");
+        }
+
+        return Result.Success(new Money(amount));
+    }
+
+    public static Money operator +(Money left, Money right) => new(left.Amount + right.Amount);
+
+    public static Money operator *(Money money, Quantity quantity) => new(money.Amount * quantity.Value);
+
+    public override string ToString() => $"{Amount.ToString("0.00", CultureInfo.InvariantCulture)} {Currency}";
 }

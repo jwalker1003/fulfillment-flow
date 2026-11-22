@@ -1,15 +1,24 @@
 namespace FulfillmentFlow.SharedKernel;
 
-public abstract class Entity<TId>
+/// <summary>An object defined by its identity: two entities of the same type with the same id are equal.</summary>
+public abstract class Entity<TId> : IEquatable<Entity<TId>>
     where TId : notnull
 {
-    protected Entity(TId id) => throw new NotImplementedException();
+    protected Entity(TId id) => Id = id;
 
-    public static bool operator ==(Entity<TId>? left, Entity<TId>? right) => throw new NotImplementedException();
+    public TId Id { get; }
 
-    public static bool operator !=(Entity<TId>? left, Entity<TId>? right) => throw new NotImplementedException();
+    public static bool operator ==(Entity<TId>? left, Entity<TId>? right) =>
+        left is null ? right is null : left.Equals(right);
 
-    public override bool Equals(object? obj) => throw new NotImplementedException();
+    public static bool operator !=(Entity<TId>? left, Entity<TId>? right) => !(left == right);
 
-    public override int GetHashCode() => throw new NotImplementedException();
+    public bool Equals(Entity<TId>? other) =>
+        other is not null
+        && (ReferenceEquals(this, other)
+            || (other.GetType() == GetType() && EqualityComparer<TId>.Default.Equals(Id, other.Id)));
+
+    public override bool Equals(object? obj) => Equals(obj as Entity<TId>);
+
+    public override int GetHashCode() => HashCode.Combine(GetType(), Id);
 }
