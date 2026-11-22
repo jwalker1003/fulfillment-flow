@@ -12,7 +12,26 @@ The single record of where the build stands. `/run-phase` and `/implement-story`
 ---
 
 ## Phase 1 — Foundation
-**Gate:** ⏳ not reached
+**Gate:** 🟡 awaiting Brad's review — 2026-11-22
+- Build: ✅ zero warnings · Tests: 207/207 in ~4 s (8 test projects; 117 architecture, 84 SharedKernel, 6 placeholder/discovery)
+- Gate criteria:
+  - Solution builds with zero warnings → ✅ `dotnet build -warnaserror --no-incremental`: 0 warnings, 0 errors
+  - SharedKernel tests pass → ✅ FulfillmentFlow.SharedKernel.Tests 84/84 (NFR-7, NFR-8, ADR-0004, ADR-0014)
+  - Architecture tests run and pass on the empty modules → ✅ FulfillmentFlow.ArchitectureTests 117/117 (NFR-1, NFR-2, NFR-6, NFR-8, BIL-2.1, ADR-0001, ADR-0005, ADR-0013, ADR-0020)
+  - Traceability → ✅ all 207 tests carry a `Req` trait, and every tagged ID has a row in traceability.md
+- Deviations and open questions:
+  1. **ADR-0004 amendment needed:** public `SharedErrors` (shared.invalid-* codes) was added to SharedKernel. Brad chose to keep it; ADR-0004 must list it.
+  2. **ADR-0014 still has status Proposed**, but P1-02 implements it as binding. Mark it Accepted?
+  3. **Doc conflict:** the P1-02 story says no `ValueObject` base, but architecture.md:15 and context-map.md:52 list one. The code follows the story; update the two docs.
+  4. **`AggregateRoot.IncrementVersion()` is internal** and visible to SharedKernel.Tests only. P4-01 must expose it to BuildingBlocks.Infrastructure or set Version another way.
+  5. **Billing.Tests vs FakePay translator:** if Billing.Tests references Billing.Infrastructure, NFR-6 fails. Decide before P6-03.
+  6. **architecture.md layout** doesn't list tests/FulfillmentFlow.SharedKernel.Tests (the ArchitectureTests expected list now does).
+  7. **Wording:** story P1-03 task 7 says "ends with IntegrationEvent"; the rule also matches `IntegrationEventV<n>` (integration-events.md rule 4).
+  8. Rules without an NFR ID are tagged with ADR IDs (ADR-0001, -0004, -0005, -0013, -0014, -0020), in a new "Architecture decisions" table in traceability.md.
+  9. Microsoft packages are pinned to 9.0.14 to match the installed runtime.
+  10. Each story took 1 review fix round; no story was blocked.
+- Review: `git diff main...phase/1-foundation`
+
 | Story | Title | Status | Commit | Notes |
 | --- | --- | --- | --- | --- |
 | P1-01 | Solution scaffold | done | fb1bdef | 1 review round. Open question before P6-03: should Billing.Tests reference Billing.Infrastructure to test the FakePay translator? That conflicts with NFR-6 (no EF Core in domain test projects). Microsoft packages pinned to 9.0.14 to match the installed runtime. ADR-tagged tests are listed in a new "Architecture decisions" table in traceability.md. |
