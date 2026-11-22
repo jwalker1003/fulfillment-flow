@@ -15,6 +15,8 @@
 | Integration event records | [04-contracts/integration-events.md](04-contracts/integration-events.md) |
 | Error codes → HTTP status | [04-contracts/error-catalog.md](04-contracts/error-catalog.md) |
 | Build order and phase gates | [05-delivery/roadmap.md](05-delivery/roadmap.md) |
+| **Where the build stands** | [05-delivery/progress.md](05-delivery/progress.md) |
+| How the factory runs (commands, agents, hooks) | [05-delivery/factory.md](05-delivery/factory.md) |
 | Units of work for the factory | [05-delivery/stories/](05-delivery/stories/) |
 | Requirement → story → test | [05-delivery/traceability.md](05-delivery/traceability.md) |
 | How we test | [06-quality/test-strategy.md](06-quality/test-strategy.md) |
@@ -23,10 +25,7 @@
 
 ## How the software factory uses these docs
 
-1. Pick the next story from the roadmap whose dependencies are done (or run `/implement-story P2-02`).
-2. Read the story and only the docs under its *Read first*.
-3. Tests first from the requirement IDs, then code, then traceability.
-4. At a phase gate, stop for Brad's review.
+Run `/run-phase <n>`. It works through the phase's stories from `progress.md` and stops at the gate for Brad's review. Full details: [05-delivery/factory.md](05-delivery/factory.md).
 
 ## Precedence when docs disagree
 

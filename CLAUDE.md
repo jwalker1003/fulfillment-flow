@@ -22,12 +22,19 @@ dotnet run --project src/FulfillmentFlow.Api
 dotnet ef migrations add <Name> --project src/Modules/<Ctx>/FulfillmentFlow.<Ctx>.Infrastructure --startup-project src/FulfillmentFlow.Api --context <Ctx>DbContext
 ```
 
+## The factory
+- `/run-phase <n>`: the orchestrator. It implements every story in phase *n* in order, using a fresh `story-implementer` subagent per story and a `story-reviewer` check, then stops at the phase gate. See `docs/05-delivery/factory.md`.
+- `/implement-story <ID>`: the same flow for one story.
+- `docs/05-delivery/progress.md` is the only progress record. The orchestrator owns it; implementers never edit it.
+- Each phase works on its own branch, `phase/<n>-<slug>`. Brad reviews and merges it at the gate.
+- Hooks enforce the rules: no finishing while the build or tests are red, and no edits to requirements or ADRs during a run.
+
 ## Workflow for every story
-1. Read the story and its *Read first* docs. Do not start a story whose dependencies are not done, or a phase whose previous gate hasn't passed (`docs/05-delivery/roadmap.md`).
+1. Read the story and its *Read first* docs. Do not start a story whose dependencies are not done, or a phase whose previous gate hasn't passed (`docs/05-delivery/progress.md`).
 2. Write failing tests for every requirement ID in the story, tagged `[Trait("Req", "<ID>")]`. Commit them.
 3. Implement the minimum to make them pass. Commit.
 4. Run the full `dotnet build -warnaserror` and `dotnet test`.
-5. Update `docs/05-delivery/traceability.md`, and the glossary, error catalog or contracts if you added anything.
+5. Update `docs/05-delivery/traceability.md`, and the glossary, error catalog or contracts if you added anything. (The orchestrator, not the implementer, updates `progress.md`.)
 6. Check `docs/06-quality/definition-of-done.md`.
 7. Stay inside the story's *Scope*. Anything else becomes a note in the PR, not code.
 

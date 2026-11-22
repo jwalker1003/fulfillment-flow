@@ -1,4 +1,7 @@
 .claude/settings.local.json
+.claude/factory-run.lock
+.claude/hooks/.last-green
+.claude/hooks/.stop-attempts
 *.db
 *.db-shm
 *.db-wal
