@@ -16,7 +16,7 @@ The single record of where the build stands. `/run-phase` and `/implement-story`
 | Story | Title | Status | Commit | Notes |
 | --- | --- | --- | --- | --- |
 | P1-01 | Solution scaffold | done | fb1bdef | 1 review round. Open question before P6-03: should Billing.Tests reference Billing.Infrastructure to test the FakePay translator? That conflicts with NFR-6 (no EF Core in domain test projects). Microsoft packages pinned to 9.0.14 to match the installed runtime. ADR-tagged tests are listed in a new "Architecture decisions" table in traceability.md. |
-| P1-02 | Shared kernel primitives | in-progress | | |
+| P1-02 | Shared kernel primitives | done | 172805a | 1 review round. Brad chose to keep the public `SharedErrors` class (the shared.invalid-* codes), which ADR-0004 does not list; ADR-0004 needs amending at the gate. Doc conflict: the story says no `ValueObject` base, but architecture.md:15 and context-map.md:52 list one. `AggregateRoot.IncrementVersion()` is internal, with InternalsVisibleTo for the tests only, so P4-01 must expose it to BuildingBlocks.Infrastructure or set Version another way. ADR-0014 still has status Proposed. SharedKernel.Tests is not in architecture.md layout or RepositoryLayout.ExpectedProjects. |
 | P1-03 | Architecture tests | todo | | |
 
 ## Phase 2 — Inventory domain
