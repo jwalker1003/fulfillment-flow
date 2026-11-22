@@ -13,6 +13,7 @@ public sealed class ProjectStructureTests
     private const string BuildingBlocksContracts = "FulfillmentFlow.BuildingBlocks.Contracts";
     private const string BuildingBlocksApplication = "FulfillmentFlow.BuildingBlocks.Application";
     private const string BuildingBlocksInfrastructure = "FulfillmentFlow.BuildingBlocks.Infrastructure";
+    private const string PlainSdk = "Microsoft.NET.Sdk";
 
     private static readonly string[] AllContractsProjects =
     [
@@ -45,12 +46,17 @@ public sealed class ProjectStructureTests
     public void NFR_1_domain_projects_reference_only_the_shared_kernel(string context)
     {
         var project = RepositoryLayout.SourceProject($"FulfillmentFlow.{context}.Domain");
+        var projectFile = RepositoryLayout.PathOf(project);
 
         var projectReferences = RepositoryLayout.ProjectReferencesOf(project);
-        var packageReferences = RepositoryLayout.PackageReferencesOf(RepositoryLayout.PathOf(project));
+        var packageReferences = RepositoryLayout.PackageReferencesOf(projectFile);
+        var frameworkReferences = RepositoryLayout.FrameworkReferencesOf(projectFile);
+        var sdk = RepositoryLayout.SdkOf(projectFile);
 
         projectReferences.ShouldBe([SharedKernel]);
         packageReferences.ShouldBeEmpty();
+        frameworkReferences.ShouldBeEmpty();
+        sdk.ShouldBe(PlainSdk);
     }
 
     [Theory]
@@ -60,12 +66,17 @@ public sealed class ProjectStructureTests
     public void NFR_1_shared_kernel_and_building_blocks_contracts_reference_nothing(string projectName)
     {
         var project = RepositoryLayout.SourceProject(projectName);
+        var projectFile = RepositoryLayout.PathOf(project);
 
         var projectReferences = RepositoryLayout.ProjectReferencesOf(project);
-        var packageReferences = RepositoryLayout.PackageReferencesOf(RepositoryLayout.PathOf(project));
+        var packageReferences = RepositoryLayout.PackageReferencesOf(projectFile);
+        var frameworkReferences = RepositoryLayout.FrameworkReferencesOf(projectFile);
+        var sdk = RepositoryLayout.SdkOf(projectFile);
 
         projectReferences.ShouldBeEmpty();
         packageReferences.ShouldBeEmpty();
+        frameworkReferences.ShouldBeEmpty();
+        sdk.ShouldBe(PlainSdk);
     }
 
     [Theory]
@@ -87,10 +98,15 @@ public sealed class ProjectStructureTests
     public void NFR_1_building_blocks_application_references_only_shared_kernel_and_building_blocks_contracts()
     {
         var project = RepositoryLayout.SourceProject(BuildingBlocksApplication);
+        var projectFile = RepositoryLayout.PathOf(project);
 
         var projectReferences = RepositoryLayout.ProjectReferencesOf(project);
+        var aspNetPackages = AspNetCorePackagesOf(projectFile);
+        var frameworkReferences = RepositoryLayout.FrameworkReferencesOf(projectFile);
 
         projectReferences.ShouldBe([SharedKernel, BuildingBlocksContracts], ignoreOrder: true);
+        aspNetPackages.ShouldBeEmpty();
+        frameworkReferences.ShouldBeEmpty();
     }
 
     [Theory]
@@ -106,11 +122,36 @@ public sealed class ProjectStructureTests
             .. AllContractsProjects,
         ];
 
+        var projectFile = RepositoryLayout.PathOf(project);
+
         var projectReferences = RepositoryLayout.ProjectReferencesOf(project);
+        var aspNetPackages = AspNetCorePackagesOf(projectFile);
+        var frameworkReferences = RepositoryLayout.FrameworkReferencesOf(projectFile);
 
         projectReferences.ShouldContain($"FulfillmentFlow.{context}.Domain");
         projectReferences.ShouldContain($"FulfillmentFlow.{context}.Contracts");
         projectReferences.ShouldContain(BuildingBlocksApplication);
+        projectReferences.Except(allowed).ShouldBeEmpty();
+        aspNetPackages.ShouldBeEmpty();
+        frameworkReferences.ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Req", "NFR-1")]
+    public void NFR_1_catalog_references_only_own_contracts_and_building_blocks()
+    {
+        var project = RepositoryLayout.SourceProject("FulfillmentFlow.Catalog");
+        string[] allowed =
+        [
+            "FulfillmentFlow.Catalog.Contracts",
+            BuildingBlocksContracts,
+            BuildingBlocksApplication,
+            BuildingBlocksInfrastructure,
+            SharedKernel,
+        ];
+
+        var projectReferences = RepositoryLayout.ProjectReferencesOf(project);
+
         projectReferences.Except(allowed).ShouldBeEmpty();
     }
 
@@ -227,6 +268,11 @@ public sealed class ProjectStructureTests
         RepositoryLayout.PackageReferencesOf(buildingBlocksInfrastructure).ShouldContain("Microsoft.EntityFrameworkCore.Sqlite");
         innerLayerProjectsUsingEfCore.ShouldBeEmpty();
     }
+
+    private static List<string> AspNetCorePackagesOf(string projectFile) =>
+        RepositoryLayout.PackageReferencesOf(projectFile)
+            .Where(package => package.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal))
+            .ToList();
 
     private static bool IsInnerLayer(string projectName) =>
         projectName == SharedKernel

@@ -139,7 +139,7 @@ Test naming: `<ReqId with underscores>_<behaviour>`, e.g. `INV_2_2_reserving_mor
 
 | Req | Story | Tests |
 | --- | --- | --- |
-| NFR-1 | P1-01, P1-03 | `ProjectStructureTests`: NFR_1_solution_contains_every_project_in_the_architecture_layout, NFR_1_domain_projects_reference_only_the_shared_kernel, NFR_1_shared_kernel_and_building_blocks_contracts_reference_nothing, NFR_1_contracts_projects_reference_only_building_blocks_contracts, NFR_1_building_blocks_application_references_only_shared_kernel_and_building_blocks_contracts, NFR_1_application_projects_reference_only_own_domain_contracts_and_building_blocks, NFR_1_infrastructure_projects_reference_only_own_application_and_building_blocks_infrastructure, NFR_1_reporting_references_only_contracts_and_building_blocks, NFR_1_dashboard_references_no_solution_project, NFR_1_api_host_composes_every_module_and_the_dashboard |
+| NFR-1 | P1-01, P1-03 | `ProjectStructureTests`: NFR_1_solution_contains_every_project_in_the_architecture_layout, NFR_1_domain_projects_reference_only_the_shared_kernel, NFR_1_shared_kernel_and_building_blocks_contracts_reference_nothing, NFR_1_contracts_projects_reference_only_building_blocks_contracts, NFR_1_building_blocks_application_references_only_shared_kernel_and_building_blocks_contracts, NFR_1_application_projects_reference_only_own_domain_contracts_and_building_blocks, NFR_1_infrastructure_projects_reference_only_own_application_and_building_blocks_infrastructure, NFR_1_reporting_references_only_contracts_and_building_blocks, NFR_1_catalog_references_only_own_contracts_and_building_blocks, NFR_1_dashboard_references_no_solution_project, NFR_1_api_host_composes_every_module_and_the_dashboard |
 | NFR-2 | P1-03 | |
 | NFR-3 | P3-05, P5-04 | |
 | NFR-4 | P4-02, P4-04 | |

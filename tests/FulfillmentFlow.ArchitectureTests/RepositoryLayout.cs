@@ -66,6 +66,17 @@ internal static class RepositoryLayout
             .Select(e => (string?)e.Attribute("Include") ?? string.Empty)
             .ToList();
 
+    /// <summary>Shared frameworks referenced directly by a project file (e.g. Microsoft.AspNetCore.App).</summary>
+    public static IReadOnlyList<string> FrameworkReferencesOf(string projectFile) =>
+        XDocument.Load(projectFile)
+            .Descendants("FrameworkReference")
+            .Select(e => (string?)e.Attribute("Include") ?? string.Empty)
+            .ToList();
+
+    /// <summary>The MSBuild SDK declared on the root Project element.</summary>
+    public static string SdkOf(string projectFile) =>
+        (string?)XDocument.Load(projectFile).Root?.Attribute("Sdk") ?? string.Empty;
+
     private static string FindRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
